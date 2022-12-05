@@ -1,356 +1,183 @@
 import React from "react";
 import './App.css';
-import  { useState } from 'react';
-import { toHaveAccessibleDescription } from "@testing-library/jest-dom/dist/matchers";
 
 
 var colour;
 let currentRow=0;
-let countred=0;
-let countblack = 0;
 
 class Master extends React.Component {
+
+  colour_palette = ['red', 'green', 'blue', 'gold', 'brown', 'orange', 'black', 'pink']
+  
   constructor(props) {
     super(props);
-    this.state = { master : [] , colour_palette : ['red', 'green', 'blue', 'gold', 'brown', 'orange', 'black', 'pink'] , 
-    codebreaker : [[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null]],
-    hintarray : [[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null]],
-    isActive:true, isWinner : false,
-    
+    this.state = {
+      codebreaker: this.getInitArray(),
+      hintarray:this.getInitArray(),
+      master: this.setMaster(),
+      gameMode: 'play'
     }
+    console.log(this.state.master)
   }
-  
 
+  getInitArray = () => {
+    var tempCodeBreaker = [];
+    for (let i=0; i<8; i++) {
+      tempCodeBreaker[i] = []
+      for (let j=0; j<4; j++) {
+        tempCodeBreaker[i][j] = null;
+      }
+    }
+    return tempCodeBreaker;
+  }
 
-  masterplays = () => {
-   
+  gameReset = () => {
+    this.setState({
+      gameMode: 'play', 
+      master: this.setMaster(),
+      codebreaker: this.getInitArray(),
+      hintarray: this.getInitArray(),
+    })
+    currentRow = 0;
+    colour = null;
+    console.log(this.state.master)
+  }
+
+  setMaster = () => {
+    var tempMaster = []
     for(let k=0;k<4;k++) {
-    const random = Math.floor(Math.random() * this.state.colour_palette.length);
-    this.state.master.push(this.state.colour_palette[random]);
+      const random = Math.floor(Math.random() * this.colour_palette.length);
+      tempMaster.push(this.colour_palette[random]);
     }
-    console.log('master:',this.state.master);
-    this.setState({isActive:false});
-    
-    
+    return tempMaster;
   }
 
-  pickred = () => {
-    colour =  'red';
-  }
-
-  pickgreen = () => {
-    colour =  'green';
-  }
-
-  pickblue = () => {
-    colour = 'blue';
-  }
-
-  pickgold = () => {
-    colour =  'gold';
-  }
-
-  pickbrown = () => {
-    colour =  'brown';
-  }
-
-  pickorange = () => {
-    colour =  'orange';
-  }
-
-  pickblack = () => {
-    colour =  'black';
-  }
-
-  pickpink = () => {
-    colour = 'pink';
+  pick_color = (picked_colour) => {
+    colour = picked_colour;
   }
 
   drop = (i,j) => { 
-   if(currentRow == i) {
-   let a = this.state.codebreaker.slice(); 
-   a[i][j] = colour;
-   this.setState({codebreaker : a});
-   }
+    if(currentRow == i) {
+      let a = this.state.codebreaker.slice(); 
+      a[i][j] = colour;
+      this.setState({codebreaker : a});
+    }
   }
 
   
   check_position = () => {
-    
-    countblack = 0;
-    countred = 0;
-    let temp = [];
-    
-
-    while(temp.length > 0) {
-      temp.pop();
-    }
+    let countRed = 0;
+    let countBlack = 0;
+    let usedMaster = [];
     for(let x=0;x<4;x++){
       for(let y=0;y<4;y++){
         if(this.state.master[x] == this.state.codebreaker[currentRow][y] && x==y) {
-          temp[y] = 'red';
+          countRed++;
+          usedMaster.push(x);
         }
       }
     }
 
     for(let a=0;a<4;a++) {
       for(let b=0;b<4;b++){
-        if(this.state.master[a] == this.state.codebreaker[currentRow][b] && a !== b) {
-          if(temp[b] == 'red') {
-            console.log('');
-          }
-          else {
-            temp[b] = 'black';
-          }
-          
+        if(this.state.master[a] == this.state.codebreaker[currentRow][b] && a !== b && !usedMaster.includes(a)) {
+          countBlack++;
+          usedMaster.push(a);
         }
       }
     }
-
-    for(let i=0;i<4;i++){
-      if(temp[i]=='red'){
-        countred=countred + 1;
-      }
+    
+    let tempHintArray=this.state.hintarray.slice();
+    for (let i=0; i<countRed; i++) {
+      tempHintArray[currentRow][i] = 'green';
     }
-   
-    console.log(countred);
-
-    for(let j=0;j<4;j++) {
-      if(temp[j] == 'black') {
-        countblack=countblack+1;
-      }
+    for (let i=countRed; i<countRed + countBlack; i++) {
+      tempHintArray[currentRow][i] = 'blue';
     }
-    
-    console.log(countblack);
-    
-    let z=this.state.hintarray.slice();
-    for(let n=0;n<temp.length;n++) {
-      if(temp[n] == 'red') {
-        z[currentRow][n] = 'red';
-      }
-      else if(temp[n] == 'black') {
-        z[currentRow][n] = 'black';
-      }
-      else {
-        console.log('');
-      }
+    for (let i=countRed + countBlack; i<4; i++) {
+      tempHintArray[currentRow][i] = 'black';
     }
-    
-    this.setState({hintarray : z});
-  
-    
-
+    this.setState({hintarray : tempHintArray});
+    if(countRed == 4) {
+      this.setState({"gameMode": "win"});
+    }
     currentRow++;
-      
-
+    if (currentRow == 8) {
+      this.setState({gameMode: "lost"});
+    }
   }
 
   render() {
-    
-    return (
-      <div id='main'>
-        <h1>Mastermind</h1>
-
-        <div id="mastermind" >
-
-                {this.state.isWinner ? null : <div id="circle5"></div> }
-                {this.state.isWinner ? null : <div id="circle6"></div> }
-                {this.state.isWinner ? null : <div id="circle7"></div> }
-                {this.state.isWinner ? null : <div id="circle8"></div> }
-                
-                
-                
-
-                {this.state.isWinner ? <div id="circle1" style={{backgroundColor : this.state.master[0]}}></div> : null }
-                {this.state.isWinner ? <div id="circle2" style={{backgroundColor : this.state.master[1]}}></div> : null }
-                {this.state.isWinner ? <div id="circle3" style={{backgroundColor : this.state.master[2]}}></div> : null }
-                {this.state.isWinner ? <div id="circle4" style={{backgroundColor : this.state.master[3]}}></div> : null }
-
+    if (this.state.gameMode == 'win') {
+      return (
+        <div id='game-result'>
+          <p id='victory'>Victory 🎉</p>
+          <button id='start' onClick={this.gameReset.bind(this)}>Replay</button>
         </div>
-
-        
-
-        <div id='subcontainer1'>
-                <div id='circle1' onClick={this.drop.bind(this,0,0)} style={{backgroundColor : this.state.codebreaker[0][0]}}></div>
-                <div id='circle2' onClick={this.drop.bind(this,0,1)} style={{backgroundColor : this.state.codebreaker[0][1]}}></div>
-                <div id='circle3' onClick={this.drop.bind(this,0,2)} style={{backgroundColor : this.state.codebreaker[0][2]}}></div>
-                <div id='circle4' onClick={this.drop.bind(this,0,3)} style={{backgroundColor : this.state.codebreaker[0][3]}}></div>
-                
-                
-
-                <div id='hintcircleone'>
-                  <div id="hintcircle1" style={{backgroundColor : this.state.hintarray[0][0]}}></div>
-                  <div id="hintcircle2" style={{backgroundColor : this.state.hintarray[0][1]}}></div>
-                  <div id="hintcircle3" style={{backgroundColor : this.state.hintarray[0][2]}}></div>
-                  <div id="hintcircle4" style={{backgroundColor : this.state.hintarray[0][3]}}></div>
-                </div>  
-
-                <button id='button' onClick={this.check_position}>Check</button>   
+      )
+    }
+    if (this.state.gameMode == 'lost') {
+      return (
+        <div id='game-result'>
+          <p id='victory'>Loss :(</p>
+          <button id='start' onClick={this.gameReset.bind(this)}>Replay</button>
         </div>
+      )
+    }
+    else {
+      return (
+        <div id='main'>
+          <h1 >Mastermind</h1>
+          <div id='game-board'>
+            <div className='rule-container'>
+              <div className='rule-heading'>Rules</div>
+              <div id='rules'>
+                Try to guess the pattern, in both order and color, within ten turns. 
+                After submitting a row, a green peg is placed for each code peg 
+                from the guess which is correct in both color and position. A blue peg 
+                indicates the existence of a correct color code peg placed in the wrong position.
+                A black peg indicated none of the above.
+                More info on <a href="https://en.wikipedia.org/wiki/Mastermind_(board_game)">Wikipedia</a>.
+              </div>
+            </div>
+            <div id='game'>
+              {
+                this.state.codebreaker.map((cb, index) => (
+                  <div className='subcontainer'>
+                      <div className='circle' onClick={this.drop.bind(this,index,0)} style={{backgroundColor : this.state.codebreaker[index][0]}}></div>
+                      <div className='circle' onClick={this.drop.bind(this,index,1)} style={{backgroundColor : this.state.codebreaker[index][1]}}></div>
+                      <div className='circle' onClick={this.drop.bind(this,index,2)} style={{backgroundColor : this.state.codebreaker[index][2]}}></div>
+                      <div className='circle' onClick={this.drop.bind(this,index,3)} style={{backgroundColor : this.state.codebreaker[index][3]}}></div>
 
-        <div id='subcontainer2'>
-                <div id='circle1' onClick={this.drop.bind(this,1,0)} style={{backgroundColor : this.state.codebreaker[1][0]}}></div>
-                <div id='circle2' onClick={this.drop.bind(this,1,1)} style={{backgroundColor : this.state.codebreaker[1][1]}}></div>
-                <div id='circle3' onClick={this.drop.bind(this,1,2)} style={{backgroundColor : this.state.codebreaker[1][2]}}></div>
-                <div id='circle4' onClick={this.drop.bind(this,1,3)} style={{backgroundColor : this.state.codebreaker[1][3]}}></div>
+                      <div className='hint-circle-parent'>
+                        <div className="hint-circle" style={{backgroundColor : this.state.hintarray[index][0]}}></div>
+                        <div className="hint-circle" style={{backgroundColor : this.state.hintarray[index][1]}}></div>
+                        <div className="hint-circle" style={{backgroundColor : this.state.hintarray[index][2]}}></div>
+                        <div className="hint-circle" style={{backgroundColor : this.state.hintarray[index][3]}}></div>
+                      </div>     
 
-                <div id='hintcircletwo'>
-                  <div id="hintcircle1" style={{backgroundColor : this.state.hintarray[1][0]}}></div>
-                  <div id="hintcircle2" style={{backgroundColor : this.state.hintarray[1][1]}}></div>
-                  <div id="hintcircle3" style={{backgroundColor : this.state.hintarray[1][2]}}></div>
-                  <div id="hintcircle4" style={{backgroundColor : this.state.hintarray[1][3]}}></div>
-                </div>     
+                      <button id='button' onClick={this.check_position}>Check</button>   
+                  </div>
+                ))
+              }
 
-                <button id='button' onClick={this.check_position}>Check</button>   
+              <div id="color-palette" >
+                      <div className="circle" style={{backgroundColor : "red"}} onClick={this.pick_color.bind(this,'red')}></div>
+                      <div className="circle" style={{backgroundColor : "green"}} onClick={this.pick_color.bind(this,'green')}></div>
+                      <div className="circle" style={{backgroundColor : "blue"}} onClick={this.pick_color.bind(this,'blue')}></div>
+                      <div className="circle" style={{backgroundColor : "gold"}} onClick={this.pick_color.bind(this,'gold')}></div>
+                      <div className="circle" style={{backgroundColor : "brown"}} onClick={this.pick_color.bind(this,'brown')}></div>
+                      <div className="circle" style={{backgroundColor : "orange"}} onClick={this.pick_color.bind(this,'orange')}></div>
+                      <div className="circle" style={{backgroundColor : "black"}} onClick={this.pick_color.bind(this,'black')}></div>
+                      <div className="circle" style={{backgroundColor : "pink"}} onClick={this.pick_color.bind(this,'pink')}></div>
+              </div>
+
+              <br></br>
+            </div>
+          </div>
         </div>
-
-        <div id='subcontainer3'>
-                <div id='circle1' onClick={this.drop.bind(this,2,0)} style={{backgroundColor : this.state.codebreaker[2][0]}}></div>
-                <div id='circle2' onClick={this.drop.bind(this,2,1)} style={{backgroundColor : this.state.codebreaker[2][1]}}></div>
-                <div id='circle3' onClick={this.drop.bind(this,2,2)} style={{backgroundColor : this.state.codebreaker[2][2]}}></div>
-                <div id='circle4' onClick={this.drop.bind(this,2,3)} style={{backgroundColor : this.state.codebreaker[2][3]}}></div>
-
-                <div id='hintcirclethree'>
-                  <div id="hintcircle1" style={{backgroundColor : this.state.hintarray[2][0]}}></div>
-                  <div id="hintcircle2" style={{backgroundColor : this.state.hintarray[2][1]}}></div>
-                  <div id="hintcircle3" style={{backgroundColor : this.state.hintarray[2][2]}}></div>
-                  <div id="hintcircle4" style={{backgroundColor : this.state.hintarray[2][3]}}></div>
-                </div>      
-
-                <button id='button' onClick={this.check_position}>Check</button>   
-        </div>
-
-        <div id='subcontainer4'>
-                <div id='circle1' onClick={this.drop.bind(this,3,0)} style={{backgroundColor : this.state.codebreaker[3][0]}}></div>
-                <div id='circle2' onClick={this.drop.bind(this,3,1)} style={{backgroundColor : this.state.codebreaker[3][1]}}></div>
-                <div id='circle3' onClick={this.drop.bind(this,3,2)} style={{backgroundColor : this.state.codebreaker[3][2]}}></div>
-                <div id='circle4' onClick={this.drop.bind(this,3,3)} style={{backgroundColor : this.state.codebreaker[3][3]}}></div>
-
-                <div id='hintcirclefour'>
-                  <div id="hintcircle1" style={{backgroundColor : this.state.hintarray[3][0]}}></div>
-                  <div id="hintcircle2" style={{backgroundColor : this.state.hintarray[3][1]}}></div>
-                  <div id="hintcircle3" style={{backgroundColor : this.state.hintarray[3][2]}}></div>
-                  <div id="hintcircle4" style={{backgroundColor : this.state.hintarray[3][3]}}></div>
-                </div>     
-
-                <button id='button' onClick={this.check_position}>Check</button>    
-        </div>
-
-        <div id='subcontainer5'>
-                <div id='circle1' onClick={this.drop.bind(this,4,0)} style={{backgroundColor : this.state.codebreaker[4][0]}}></div>
-                <div id='circle2' onClick={this.drop.bind(this,4,1)} style={{backgroundColor : this.state.codebreaker[4][1]}}></div>
-                <div id='circle3' onClick={this.drop.bind(this,4,2)} style={{backgroundColor : this.state.codebreaker[4][2]}}></div>
-                <div id='circle4' onClick={this.drop.bind(this,4,3)} style={{backgroundColor : this.state.codebreaker[4][3]}}></div>
-
-                <div id='hintcirclefive'>
-                  <div id="hintcircle1" style={{backgroundColor : this.state.hintarray[4][0]}}></div>
-                  <div id="hintcircle2" style={{backgroundColor : this.state.hintarray[4][1]}}></div>
-                  <div id="hintcircle3" style={{backgroundColor : this.state.hintarray[4][2]}}></div>
-                  <div id="hintcircle4" style={{backgroundColor : this.state.hintarray[4][3]}}></div>
-                </div>   
-
-                <button id='button' onClick={this.check_position}>Check</button>   
-        </div>
-
-        <div id='subcontainer6'>
-                <div id='circle1' onClick={this.drop.bind(this,5,0)} style={{backgroundColor : this.state.codebreaker[5][0]}}></div>
-                <div id='circle2' onClick={this.drop.bind(this,5,1)} style={{backgroundColor : this.state.codebreaker[5][1]}}></div>
-                <div id='circle3' onClick={this.drop.bind(this,5,2)} style={{backgroundColor : this.state.codebreaker[5][2]}}></div>
-                <div id='circle4' onClick={this.drop.bind(this,5,3)} style={{backgroundColor : this.state.codebreaker[5][3]}}></div>
-
-                <div id='hintcirclesix'>
-                  <div id="hintcircle1" style={{backgroundColor : this.state.hintarray[5][0]}}></div>
-                  <div id="hintcircle2" style={{backgroundColor : this.state.hintarray[5][1]}}></div>
-                  <div id="hintcircle3" style={{backgroundColor : this.state.hintarray[5][2]}}></div>
-                  <div id="hintcircle4" style={{backgroundColor : this.state.hintarray[5][3]}}></div>
-                </div>  
-
-                <button id='button' onClick={this.check_position}>Check</button>    
-        </div>
-
-        <div id='subcontainer7'>
-                <div id='circle1' onClick={this.drop.bind(this,6,0)} style={{backgroundColor : this.state.codebreaker[6][0]}}></div>
-                <div id='circle2' onClick={this.drop.bind(this,6,1)} style={{backgroundColor : this.state.codebreaker[6][1]}}></div>
-                <div id='circle3' onClick={this.drop.bind(this,6,2)} style={{backgroundColor : this.state.codebreaker[6][2]}}></div>
-                <div id='circle4' onClick={this.drop.bind(this,6,3)} style={{backgroundColor : this.state.codebreaker[6][3]}}></div>
-
-                <div id='hintcircleseven'>
-                  <div id="hintcircle1" style={{backgroundColor : this.state.hintarray[6][0]}}></div>
-                  <div id="hintcircle2" style={{backgroundColor : this.state.hintarray[6][1]}}></div>
-                  <div id="hintcircle3" style={{backgroundColor : this.state.hintarray[6][2]}}></div>
-                  <div id="hintcircle4" style={{backgroundColor : this.state.hintarray[6][3]}}></div>
-                </div>  
-
-                <button id='button' onClick={this.check_position}>Check</button>    
-        </div>
-
-        <div id='subcontainer8'>
-                <div id='circle1' onClick={this.drop.bind(this,7,0)} style={{backgroundColor : this.state.codebreaker[7][0]}}></div>
-                <div id='circle2' onClick={this.drop.bind(this,7,1)} style={{backgroundColor : this.state.codebreaker[7][1]}}></div>
-                <div id='circle3' onClick={this.drop.bind(this,7,2)} style={{backgroundColor : this.state.codebreaker[7][2]}}></div>
-                <div id='circle4' onClick={this.drop.bind(this,7,3)} style={{backgroundColor : this.state.codebreaker[7][3]}}></div>
-
-                <div id='hintcircleeight'>
-                  <div id="hintcircle1" style={{backgroundColor : this.state.hintarray[7][0]}}></div>
-                  <div id="hintcircle2" style={{backgroundColor : this.state.hintarray[7][1]}}></div>
-                  <div id="hintcircle3" style={{backgroundColor : this.state.hintarray[7][2]}}></div>
-                  <div id="hintcircle4" style={{backgroundColor : this.state.hintarray[7][3]}}></div>
-                </div>  
-
-                <button id='button' onClick={this.check_position}>Check</button>    
-        </div>
-
-        <div id='subcontainer9'>
-                <div id='circle1' onClick={this.drop.bind(this,8,0)} style={{backgroundColor : this.state.codebreaker[8][0]}}></div>
-                <div id='circle2' onClick={this.drop.bind(this,8,1)} style={{backgroundColor : this.state.codebreaker[8][1]}}></div>
-                <div id='circle3' onClick={this.drop.bind(this,8,2)} style={{backgroundColor : this.state.codebreaker[8][2]}}></div>
-                <div id='circle4' onClick={this.drop.bind(this,8,3)} style={{backgroundColor : this.state.codebreaker[8][3]}}></div>
-
-                <div id='hintcirclenine'>
-                  <div id="hintcircle1" style={{backgroundColor : this.state.hintarray[8][0]}}></div>
-                  <div id="hintcircle2" style={{backgroundColor : this.state.hintarray[8][1]}}></div>
-                  <div id="hintcircle3" style={{backgroundColor : this.state.hintarray[8][2]}}></div>
-                  <div id="hintcircle4" style={{backgroundColor : this.state.hintarray[8][3]}}></div>
-                </div> 
-
-                <button id='button' onClick={this.check_position}>Check</button>      
-        </div>
-
-        <div id='subcontainer10'>
-                <div id='circle1' onClick={this.drop.bind(this,9,0)} style={{backgroundColor : this.state.codebreaker[9][0]}}></div>
-                <div id='circle2' onClick={this.drop.bind(this,9,1)} style={{backgroundColor : this.state.codebreaker[9][1]}}></div>
-                <div id='circle3' onClick={this.drop.bind(this,9,2)} style={{backgroundColor : this.state.codebreaker[9][2]}}></div>
-                <div id='circle4' onClick={this.drop.bind(this,9,3)} style={{backgroundColor : this.state.codebreaker[9][3]}}></div>
-
-                <div id='hintcircleten'>
-                  <div id="hintcircle1" style={{backgroundColor : this.state.hintarray[9][0]}}></div>
-                  <div id="hintcircle2" style={{backgroundColor : this.state.hintarray[9][1]}}></div>
-                  <div id="hintcircle3" style={{backgroundColor : this.state.hintarray[9][2]}}></div>
-                  <div id="hintcircle4" style={{backgroundColor : this.state.hintarray[9][3]}}></div>
-                </div>  
-
-                <button id='button' onClick={this.check_position}>Check</button>     
-        </div>
-
-        <div id="colorpalette" >
-                <div id="red" onClick={this.pickred}></div>
-                <div id="green" onClick={this.pickgreen}></div>
-                <div id="blue" onClick={this.pickblue}></div>
-                <div id="gold" onClick={this.pickgold}></div>
-                <div id="brown" onClick={this.pickbrown}></div>
-                <div id="orange" onClick={this.pickorange}></div>
-                <div id="black" onClick={this.pickblack}></div>
-                <div id="pink" onClick={this.pickpink}></div>
-        </div>
-
-        <br></br>
-        
-
-        {this.state.isActive ? <button id='start' onClick={this.masterplays} >Play</button> : null }
-
-      </div>
-
-    )
+      )
+    }
   }
 }
 
